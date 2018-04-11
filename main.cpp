@@ -13,46 +13,55 @@ class TaskList{
 		TaskList(int length){
 			for(int i = 1; i <= length; i++){m_q.push(i);}//fill m_q
 		}
-		int getDigitToCompute(){
-			try{
-				std::lock_guard<std::mutex> lck (m_mtx); 
-				m_digit = m_q.front();
-				m_q.pop();
-				return m_digit;
-			}catch(std::exception e){return -1;}
+		TaskList(const TaskList& other) {
+			std::lock_guard<std::mutex> lock(other.m_mtx);
+			m_q = other.m_q;
+			m_digit = other.m_digit;
 		}
-	private:
+		int getDigitToCompute(){
+			std::lock_guard<std::mutex> lck (m_mtx); 
+			m_digit = m_q.front();
+			m_q.pop();
+			return m_digit;
+		}
 		int m_digit;
 		std::queue<int> m_q;
-		std::mutex m_mtx;
+		mutable std::mutex m_mtx;
 };
 
 class ResultTable{
 	public:
+		ResultTable(){}
+		ResultTable(const ResultTable& other) {
+			std::lock_guard<std::mutex> lock(other.m_mtx);
+			m_table = other.m_table;
+		}
+
 		void addToTable(int key, int value){
-			try{
-				std::lock_guard<std::mutex> lck (m_mtx);
-				m_table.insert({key,value});
-			}catch(std::exception e){}
+			std::lock_guard<std::mutex> lck (m_mtx);
+			m_table.insert({key,value});
 		}
 		int getValueAt(int key){
-			try{
-				std::lock_guard<std::mutex> lck (m_mtx);
-				return m_table.at(key);
-			}catch(std::exception e){return -1;}
+			std::lock_guard<std::mutex> lck (m_mtx);
+			return m_table.at(key);
 		}
-	private:
 		std::unordered_map<int,int> m_table;
-		std::mutex m_mtx;
+		mutable std::mutex m_mtx;
 };
 
-void threadWorker(std::uint16_t threadNum, TaskList& tasks, ResultTable& results) {
+std::mutex mtx;
+
+void threadWorker(std::uint16_t threadNum) {
 	//#warning TODO: This function will take a reference to the FIFO task queue as an argument
 	//#warning TODO: This function will take a reference to your unordered_map as an argument
 
 	//
 	// This code exists simply to illustrate a worker thread.
 	// I had better not see this in your final submission.
+
+
+	//	std::lock_guard<std::mutex> lck (mtx);
+
 	std::cout << "Hi! I'm thread number " << threadNum << ", and I can count to 10!\n";
 	for (int i = 1; i <= 10; ++i)
 		std::cout << "[" <<  threadNum << "] " << i << std::endl;
@@ -60,6 +69,7 @@ void threadWorker(std::uint16_t threadNum, TaskList& tasks, ResultTable& results
 	std::cout << "[" <<  threadNum << "] watch me compute digit #"
 		<< threadNum+1 << " of pi: "
 		<< computePiDigit(threadNum+1) << std::endl;
+
 }
 
 int main() {
@@ -75,7 +85,8 @@ int main() {
 	for (std::uint16_t core = 0; core < std::thread::hardware_concurrency(); core++)
 		// The arguments you wish to pass to threadWorker are passed as
 		// arguments to the constructor of std::thread
-		threads.push_back(std::make_shared<std::thread>(threadWorker, core, lst, results));
+		threads.push_back(std::make_shared<std::thread>(threadWorker, core));
+	//threads.push_back(std::make_shared<std::thread>(threadWorker, core, lst, results));
 
 	//
 	// Wait for all of these threads to complete
