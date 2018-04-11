@@ -51,7 +51,7 @@ class ResultTable{
 
 std::mutex mtx;
 
-void threadWorker(std::uint16_t threadNum) {
+void threadWorker(std::uint16_t threadNum, TaskList &tasks, ResultTable &results) {
 	//#warning TODO: This function will take a reference to the FIFO task queue as an argument
 	//#warning TODO: This function will take a reference to your unordered_map as an argument
 
@@ -85,8 +85,7 @@ int main() {
 	for (std::uint16_t core = 0; core < std::thread::hardware_concurrency(); core++)
 		// The arguments you wish to pass to threadWorker are passed as
 		// arguments to the constructor of std::thread
-		threads.push_back(std::make_shared<std::thread>(threadWorker, core));
-	//threads.push_back(std::make_shared<std::thread>(threadWorker, core, lst, results));
+		threads.push_back(std::make_shared<std::thread>(threadWorker, core, std::ref(lst), std::ref(results)));
 
 	//
 	// Wait for all of these threads to complete
