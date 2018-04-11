@@ -37,7 +37,7 @@ class ResultTable{
 			m_table = other.m_table;
 		}
 
-		void addToTable(int key, int value){
+		void addToTable(int key, unsigned int value){
 			std::lock_guard<std::mutex> lck (m_mtx);
 			m_table.insert({key,value});
 		}
@@ -49,26 +49,10 @@ class ResultTable{
 		mutable std::mutex m_mtx;
 };
 
-std::mutex mtx;
-
 void threadWorker(std::uint16_t threadNum, TaskList &tasks, ResultTable &results) {
-	//#warning TODO: This function will take a reference to the FIFO task queue as an argument
-	//#warning TODO: This function will take a reference to your unordered_map as an argument
-
-	//
-	// This code exists simply to illustrate a worker thread.
-	// I had better not see this in your final submission.
-
-
-	//	std::lock_guard<std::mutex> lck (mtx);
-
-	std::cout << "Hi! I'm thread number " << threadNum << ", and I can count to 10!\n";
-	for (int i = 1; i <= 10; ++i)
-		std::cout << "[" <<  threadNum << "] " << i << std::endl;
-
-	std::cout << "[" <<  threadNum << "] watch me compute digit #"
-		<< threadNum+1 << " of pi: "
-		<< computePiDigit(threadNum+1) << std::endl;
+	int digit = tasks.getDigitToCompute(); 
+	results.addToTable(digit, computePiDigit(digit));
+	std::cout << ".";
 
 }
 
@@ -93,8 +77,11 @@ int main() {
 		thread->join();
 
 	std::cout << std::endl << std::endl;
-
-#warning TODO: Print the digits of PI from our unordered_map, in order
+	std::cout << "3.";
+	for(int i = 1; i <= results.m_table.size(); i++){
+		std::cout << results.getValueAt(i);
+	}
+	std::cout << std::endl;
 
 	return 0;
 }
