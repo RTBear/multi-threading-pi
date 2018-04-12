@@ -11,4 +11,5 @@ add_executable(ComputePi
 	computePi.hpp
 
     # Add files implementing your thread-safe data structures below
+	# No need, placed directly into main.cpp
 )
